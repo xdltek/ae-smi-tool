@@ -1,5 +1,0 @@
-/home/azurengine/demo_github/ae-smi-fan-control/build/CMakeFiles/edit_cache.dir
-/home/azurengine/demo_github/ae-smi-fan-control/build/CMakeFiles/rebuild_cache.dir
-/home/azurengine/demo_github/ae-smi-fan-control/build/demo/CMakeFiles/ae-smi-fan-demo.dir
-/home/azurengine/demo_github/ae-smi-fan-control/build/demo/CMakeFiles/edit_cache.dir
-/home/azurengine/demo_github/ae-smi-fan-control/build/demo/CMakeFiles/rebuild_cache.dir

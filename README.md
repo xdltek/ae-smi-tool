@@ -1,22 +1,41 @@
-# AE-SMI Fan Control Demo
+# AE-SMI Demo Collection
 
 ## Overview
 
-This project provides a demonstration application for controlling fan speed on RPP devices using the AE-SMI API. The demo shows how to:
+This project provides demonstration applications for interacting with RPP devices using the AE-SMI API. The collection includes:
 
+1. **Fan Control Demo** - Demonstrates fan speed control functionality
+2. **RPP Info Demo** - Demonstrates device information querying
+
+### Fan Control Demo
+
+The fan control demo shows how to:
 - Set fan speed manually (0-6 levels, typically mapping to 0%, 17%, 33%, 50%, 67%, 83%, 100%)
 - Enable/disable automatic fan control
 - Query current fan speed
 - Properly initialize and manage devices
 
+### RPP Info Demo
+
+The RPP info demo shows how to:
+- Query device temperature
+- Query device power consumption
+- Query GPU loading/utilization
+- Iterate through multiple devices
+
 ## Project Structure
 
 ```
-ae-smi-fan-control/
+ae-smi-demo/
 ├── CMakeLists.txt          # Root CMake configuration
-├── demo/                   # Demo application directory
+├── demo/                   # Demo applications directory
 │   ├── CMakeLists.txt      # Demo CMake configuration
-│   └── fan_speed_control_demo.c  # Main demo source code
+│   ├── fan-control/        # Fan control demo
+│   │   ├── CMakeLists.txt
+│   │   └── fan_speed_control_demo.c
+│   └── rpp-info/           # RPP information query demo
+│       ├── CMakeLists.txt
+│       └── rpp_info.c
 ├── inc/                    # Header files
 │   ├── ae_smi_common.h
 │   ├── ae_smi_version.h
@@ -48,13 +67,13 @@ The following system libraries are automatically linked:
 
 **Note:** All static libraries are bundled in the `lib/` directory. No additional library installation or path configuration is required.
 
-## Building the Demo
+## Building the Demos
 
-### Option 1: Using CMake (Recommended)
+### Using CMake (Recommended)
 
 1. **Create a build directory:**
    ```bash
-   cd ae-smi-fan-control
+   cd ae-smi-demo
    mkdir build
    cd build
    ```
@@ -64,12 +83,14 @@ The following system libraries are automatically linked:
    cmake ..
    ```
 
-3. **Build the demo:**
+3. **Build all demos:**
    ```bash
    make
    ```
 
-The executable will be created as `build/demo/ae-smi-fan-demo`.
+The executables will be created as:
+- `build/demo/fan-control/ae-smi-fan-demo` - Fan control demo
+- `build/demo/rpp-info/rpp-info` - RPP information query demo
 
 ### Clean Build Artifacts
 
@@ -79,7 +100,7 @@ cd build
 make clean
 ```
 
-## Running the Demo
+## Running the Demos
 
 ### Prerequisites
 
@@ -88,29 +109,50 @@ make clean
    - Verify device drivers are loaded
 
 2. **Permissions:**
-   - The application may require root/sudo privileges to access hardware devices
-   - Run with appropriate permissions if needed:
-     ```bash
-     sudo ./build/demo/ae-smi-fan-demo
-     ```
+   - The applications may require root/sudo privileges to access hardware devices
+   - Run with appropriate permissions if needed
 
-### Running the Demo
+### Running the Fan Control Demo
 
-The demo takes no command-line arguments and runs automatically through a series of examples:
+The fan control demo takes no command-line arguments and runs automatically through a series of examples:
 
 ```bash
-cd build/demo
+cd build/demo/fan-control
 ./ae-smi-fan-demo
 ```
 
 Or from the project root:
 ```bash
-./build/demo/ae-smi-fan-demo
+./build/demo/fan-control/ae-smi-fan-demo
 ```
 
-### Demo Execution Flow
+With sudo (if needed):
+```bash
+sudo ./build/demo/fan-control/ae-smi-fan-demo
+```
 
-The demo automatically executes the following sequence:
+### Running the RPP Info Demo
+
+The RPP info demo takes no command-line arguments and automatically queries all detected devices:
+
+```bash
+cd build/demo/rpp-info
+./rpp-info
+```
+
+Or from the project root:
+```bash
+./build/demo/rpp-info/rpp-info
+```
+
+With sudo (if needed):
+```bash
+sudo ./build/demo/rpp-info/rpp-info
+```
+
+### Fan Control Demo Execution Flow
+
+The fan control demo automatically executes the following sequence:
 
 1. **Device Detection & Initialization:**
    - Detects available RPP devices
@@ -142,7 +184,7 @@ The demo automatically executes the following sequence:
 6. **Cleanup:**
    - Properly closes and cleans up device resources
 
-### Expected Output
+### Fan Control Demo Expected Output
 
 ```
 === Fan Speed Control Demo ===
@@ -173,6 +215,46 @@ Cleanup successful
 === Demo completed ===
 ```
 
+### RPP Info Demo Execution Flow
+
+The RPP info demo automatically executes the following sequence:
+
+1. **Device Detection:**
+   - Gets the count of available RPP devices in the system
+
+2. **Device Initialization:**
+   - Initializes all RPP devices (required before querying)
+
+3. **For Each Device:**
+   - **Temperature Query:** Reads and displays current device temperature in Celsius
+   - **Power Query:** 
+     - Enables power measurement (`get_pow_on()`)
+     - Reads current power consumption in Watts
+     - Disables power measurement (`get_pow_off()`) to save resources
+   - **GPU Loading Query:** 
+     - Measures GPU utilization over ~200ms
+     - Displays utilization as a percentage
+
+4. **Cleanup:**
+   - Closes all initialized devices and releases resources
+
+### RPP Info Demo Expected Output
+
+```
+device 0:
+TEMP: 45.23C
+POW: 12.345W
+GPU: 35.67%
+
+device 1:
+TEMP: 42.10C
+POW: 11.890W
+GPU: 28.45%
+
+```
+
+**Note:** The output will show one section per detected device. If only one device is present, you'll see a single device section.
+
 ### Fan Speed Levels
 
 The demo uses speed levels 0-6, which typically map to the following percentages:
@@ -191,14 +273,16 @@ The demo uses speed levels 0-6, which typically map to the following percentages
 
 ## API Usage Examples
 
-### Setting Fan Speed Manually
+### Fan Control API
+
+#### Setting Fan Speed Manually
 
 ```c
 RPPReturn_t ret = set_fan_speed_manual(dev_id, fan_speed);
 // fan_speed: 0-6 (typically maps to 0%, 17%, 33%, 50%, 67%, 83%, 100%)
 ```
 
-### Enabling/Disabling Automatic Fan Control
+#### Enabling/Disabling Automatic Fan Control
 
 ```c
 // Enable automatic mode
@@ -208,12 +292,50 @@ RPPReturn_t ret = set_fan_auto_mode(dev_id, 1);
 RPPReturn_t ret = set_fan_auto_mode(dev_id, 0);
 ```
 
-### Querying Current Fan Speed
+#### Querying Current Fan Speed
 
 ```c
 uint32_t current_speed;
 RPPReturn_t ret = get_fan_speed_current(dev_id, &current_speed);
 // current_speed will contain the percentage (0-100)
+```
+
+### Device Information Query API
+
+#### Querying Device Temperature
+
+```c
+info_type type;
+double temp_value;
+uint32_t len;
+RPPReturn_t ret = get_dev_info(dev_id, INFO_TEMP, &type, &temp_value, &len);
+// temp_value will contain the temperature in Celsius
+```
+
+#### Querying Device Power Consumption
+
+```c
+info_type type;
+double power_value;
+uint32_t len;
+
+// Power measurement must be enabled before querying
+get_pow_on(dev_id);
+RPPReturn_t ret = get_dev_info(dev_id, INFO_POW, &type, &power_value, &len);
+get_pow_off(dev_id);  // Disable power measurement when done
+// power_value will contain the power consumption in Watts
+```
+
+#### Querying GPU Loading/Utilization
+
+```c
+info_type type;
+double gpu_loading;
+uint32_t len;
+// Last parameter is measurement duration in units (~200ms per unit)
+RPPReturn_t ret = get_gpu_loading_info(dev_id, &type, &gpu_loading, &len, 1);
+// gpu_loading will contain utilization as a fraction (0.0 to 1.0)
+// Multiply by 100 to get percentage: double percentage = 100 * gpu_loading;
 ```
 
 ## Troubleshooting
@@ -262,10 +384,16 @@ If you encounter library not found errors during linking:
   - Run with sudo: `sudo ./build/demo/ae-smi-fan-demo`
   - Or add your user to the appropriate device group (if configured)
 
-- **"Failed to set fan speed" or "Failed to get fan speed"**
+- **"Failed to set fan speed" or "Failed to get fan speed"** (Fan Control Demo)
   - Verify the device supports thermal control
   - Check that the device is fully initialized
   - Review error codes in the output for specific failure reasons
+
+- **"Failed to get device info" or incorrect values** (RPP Info Demo)
+  - Ensure the device is fully initialized before querying
+  - For power queries, verify `get_pow_on()` was called before `get_dev_info()`
+  - Check that the device supports the requested information type
+  - Verify device drivers are properly loaded
 
 ### Build Errors
 
@@ -307,12 +435,23 @@ For issues or questions:
 
 - **Cleanup:** The demo properly cleans up device resources at the end. Always call `close_odev()` when finished to release device handles.
 
-### Modifying the Demo
+### Modifying the Demos
 
-To customize the demo behavior, edit `demo/fan_speed_control_demo.c`:
+#### Fan Control Demo
+
+To customize the fan control demo behavior, edit `demo/fan-control/fan_speed_control_demo.c`:
 
 - Change the default device ID: Modify `uint32_t dev_id = 0;` in `main()`
 - Add custom speed sequences: Add additional `set_fan_speed_manual()` calls
 - Adjust timing: Modify `sleep()` durations or add verification loops
 - Add command-line arguments: Parse `argc`/`argv` to accept device ID or speed level as parameters
+
+#### RPP Info Demo
+
+To customize the RPP info demo behavior, edit `demo/rpp-info/rpp_info.c`:
+
+- Query additional information: Add more `get_dev_info()` calls with different `info_name` values
+- Change GPU measurement duration: Modify the last parameter of `get_gpu_loading_info()` (units are ~200ms each)
+- Filter specific devices: Add conditional logic in the loop to skip certain device IDs
+- Add command-line arguments: Parse `argc`/`argv` to accept device ID filter or query options
 
