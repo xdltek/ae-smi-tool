@@ -1,0 +1,1 @@
+/usr/bin/cc -O3 -DNDEBUG "CMakeFiles/ae-smi-fan-demo.dir/fan_speed_control_demo.c.o" -o ae-smi-fan-demo  /home/azurengine/demo_github/ae-smi-fan-control/demo/../lib/librpp_smi.a /home/azurengine/demo_github/ae-smi-fan-control/demo/../lib/librpp_osal_a.a /home/azurengine/demo_github/ae-smi-fan-control/demo/../lib/libuv_a.a -lpthread -ldl 
