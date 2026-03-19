@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8...3.5)
-project (ae-smi)
+project (ae-smi_tool)
 
 # CMP0048 error.
 if (CMAKE_VERSION VERSION_LESS 3.0)
@@ -9,12 +9,12 @@ else()
 endif()
 
 
-set (AESMI_MAJOR 3)
-set (AESMI_MINOR 0)
-set (AESMI_PATCH 3)
-set (AESMI_BUILD 17)
+set (AESMI_TOOL_VERSION_MAJOR 3)
+set (AESMI_TOOL_VERSION_MINOR 0)
+set (AESMI_TOOL_VERSION_PATCH 3)
+set (AESMI_TOOL_VERSION_BUILD 17)
 
-add_definitions(-DAESMI_MAJOR=${AESMI_MAJOR} -DAESMI_MINOR=${AESMI_MINOR} -DAESMI_PATCH=${AESMI_PATCH} -DAESMI_BUILD=${AESMI_BUILD})
+add_definitions(-DAESMI_TOOL_VERSION_MAJOR=${AESMI_TOOL_VERSION_MAJOR} -DAESMI_TOOL_VERSION_MINOR=${AESMI_TOOL_VERSION_MINOR} -DAESMI_TOOL_VERSION_PATCH=${AESMI_TOOL_VERSION_PATCH} -DAESMI_TOOL_VERSION_BUILD=${AESMI_TOOL_VERSION_BUILD})
 
 
 # build in different platform, according to cmake marco
@@ -44,6 +44,6 @@ endif()
 
 
 # build
-add_subdirectory(demo)
+add_subdirectory(tools)
 
 #

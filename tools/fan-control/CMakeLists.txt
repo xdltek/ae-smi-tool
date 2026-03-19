@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8...3.5)
 
-set(TARGET ae-smi-fan-demo)
+set(TARGET ae-smi-fan-control)
 
 file(GLOB common_src "${CMAKE_CURRENT_SOURCE_DIR}/*.c")
 add_executable(${TARGET} ${common_src})

@@ -1,8 +1,8 @@
 /**
  * @file fan_speed_control_demo.c
- * @brief Demo code demonstrating how to control fan speed using the thermal control API
+ * @brief Tool code demonstrating how to control fan speed using the thermal control API
  * 
- * This demo shows:
+ * This tool shows:
  * - How to set fan speed manually (typically 0-6 for 0%, 17%, 33%, 50%, 67%, 83%, 100%)
  * - How to enable/disable automatic fan control
  * - Proper error handling and device initialization
@@ -15,6 +15,16 @@
 #include "hl_api_developer.h"
 #include "hl_api.h"
 #include "string.h"
+
+#define FAIL_AND_EXIT_ON_ERROR(step_desc, ret_code)                                      \
+    do {                                                                                  \
+        if ((ret_code) != RPP_SUCCESS) {                                                  \
+            printf("ERROR: %s failed (error code %d).\n", (step_desc), (ret_code));      \
+            printf("Fan control is supported on PCIe cards only; M.2 cards are not supported.\n"); \
+            exit_code = EXIT_FAILURE;                                                     \
+            goto cleanup;                                                                 \
+        }                                                                                 \
+    } while (0)
 /**
  * @brief Set fan speed manually (disable auto mode and set specific speed)
  * 
@@ -107,7 +117,7 @@ RPPReturn_t get_fan_speed_current(uint32_t dev_id, uint32_t *fan_speed)
 }
 
 /**
- * @brief Main function demonstrating fan speed control
+ * @brief Main function for fan speed control
  */
 int main(int argc, char **argv)
 {
@@ -115,8 +125,11 @@ int main(int argc, char **argv)
     uint32_t dev_id = 0;  // Use device 0 (change if you have multiple devices)
     uint32_t device_count;
     uint32_t current_fan_speed;
+    int exit_code = EXIT_SUCCESS;
     
-    printf("=== Fan Speed Control Demo ===\n\n");
+    printf("=== Fan Speed Control Tool ===\n\n");
+    printf("WARNING: Fan control is supported on PCIe cards only.\n");
+    printf("WARNING: M.2 cards do not support fan control APIs.\n\n");
     
     // Get device count
     device_count = get_rdev_count();
@@ -140,16 +153,12 @@ int main(int argc, char **argv)
     printf("\n--- Example 1: Get current fan speed ---\n");
     init_reg( dev_id);
     ret = get_fan_speed_current(dev_id, &current_fan_speed);
-    if (ret != RPP_SUCCESS) {
-        printf("Warning: Could not read current fan speed\n");
-    }
+    FAIL_AND_EXIT_ON_ERROR("reading current fan speed", ret);
     
     // Example 2: Enable automatic fan control
     printf("\n--- Example 2: Enable automatic fan control ---\n");
     ret = set_fan_auto_mode(dev_id, 1);
-    if (ret != RPP_SUCCESS) {
-        printf("Warning: Failed to enable auto mode\n");
-    }
+    FAIL_AND_EXIT_ON_ERROR("enabling automatic fan mode", ret);
     
     // Wait a moment for the change to take effect
     sleep(1);
@@ -157,89 +166,81 @@ int main(int argc, char **argv)
     // Example 3: Disable auto mode and set manual speed to 0% (speed level 0 = 0%)
     printf("\n--- Example 3: Set manual fan speed to 0%% (speed level 0) ---\n");
     ret = set_fan_speed_manual(dev_id, 0);
-    if (ret != RPP_SUCCESS) {
-        printf("Warning: Failed to set manual fan speed\n");
-    }
+    FAIL_AND_EXIT_ON_ERROR("setting manual fan speed to level 0", ret);
     
     // Verify the change
     sleep(1);
     init_reg( dev_id);
     ret = get_fan_speed_current(dev_id, &current_fan_speed);
+    FAIL_AND_EXIT_ON_ERROR("verifying fan speed after level 0", ret);
     
    
     // Example 4: Set fan to 17% speed (speed level 1 = 17%)
     printf("\n--- Example 5: Set fan to minimum speed (speed level 1 = 17%%) ---\n");
     ret = set_fan_speed_manual(dev_id, 1);
-    if (ret != RPP_SUCCESS) {
-        printf("Warning: Failed to set fan to minimum speed\n");
-    }
+    FAIL_AND_EXIT_ON_ERROR("setting manual fan speed to level 1", ret);
     
     sleep(1);
     init_reg( dev_id);
     ret = get_fan_speed_current(dev_id, &current_fan_speed);
+    FAIL_AND_EXIT_ON_ERROR("verifying fan speed after level 1", ret);
     
     // Example 5: Set fan to 33% speed (speed level 2 = 33%)
     printf("\n--- Example 6: Set fan to 25%% speed (speed level 2 = 33%%) ---\n");
     ret = set_fan_speed_manual(dev_id, 2);
-    if (ret != RPP_SUCCESS) {
-        printf("Warning: Failed to set fan to 33%% speed\n");
-    }
+    FAIL_AND_EXIT_ON_ERROR("setting manual fan speed to level 2", ret);
     
     sleep(1);
     init_reg( dev_id);
     ret = get_fan_speed_current(dev_id, &current_fan_speed);
+    FAIL_AND_EXIT_ON_ERROR("verifying fan speed after level 2", ret);
 
     // Example 6: Set fan to 50% speed (speed level 3 = 50%)
     printf("\n--- Example 6: Set fan to 50%% speed (speed level 3 = 50%%) ---\n");
     ret = set_fan_speed_manual(dev_id, 3);
-    if (ret != RPP_SUCCESS) {
-        printf("Warning: Failed to set fan to 50%% speed\n");
-    }
+    FAIL_AND_EXIT_ON_ERROR("setting manual fan speed to level 3", ret);
     
     sleep(1);
     init_reg( dev_id);
     ret = get_fan_speed_current(dev_id, &current_fan_speed);
+    FAIL_AND_EXIT_ON_ERROR("verifying fan speed after level 3", ret);
 
    // Example 7: Set fan to 67% speed (speed level 4 = 67%)
    printf("\n--- Example 6: Set fan to 67%% speed (speed level 4 = 67%%) ---\n");
    ret = set_fan_speed_manual(dev_id, 4);
-   if (ret != RPP_SUCCESS) {
-       printf("Warning: Failed to set fan to 67%% speed\n");
-   }
+   FAIL_AND_EXIT_ON_ERROR("setting manual fan speed to level 4", ret);
    
    sleep(1);
    init_reg( dev_id);
    ret = get_fan_speed_current(dev_id, &current_fan_speed);
+   FAIL_AND_EXIT_ON_ERROR("verifying fan speed after level 4", ret);
 
     // Example 8: Set fan to 83% speed (speed level 5 = 83%)
    printf("\n--- Example 6: Set fan to 83%% speed (speed level 5 = 83%%) ---\n");
    ret = set_fan_speed_manual(dev_id, 5);
-   if (ret != RPP_SUCCESS) {
-       printf("Warning: Failed to set fan to 83%% speed\n");
-   }
+   FAIL_AND_EXIT_ON_ERROR("setting manual fan speed to level 5", ret);
    
    sleep(1);
    init_reg( dev_id);
    ret = get_fan_speed_current(dev_id, &current_fan_speed);
+   FAIL_AND_EXIT_ON_ERROR("verifying fan speed after level 5", ret);
 
     // Example 9: Set fan to maximum speed (speed level 6 = 100%)
     printf("\n--- Example 4: Set fan to maximum speed (speed level 6 = 100%%) ---\n");
     ret = set_fan_speed_manual(dev_id, 6);
-    if (ret != RPP_SUCCESS) {
-        printf("Warning: Failed to set fan to maximum speed\n");
-    }
+    FAIL_AND_EXIT_ON_ERROR("setting manual fan speed to level 6", ret);
     
     sleep(1);
     init_reg( dev_id);
     ret = get_fan_speed_current(dev_id, &current_fan_speed);
+    FAIL_AND_EXIT_ON_ERROR("verifying fan speed after level 6", ret);
 
     // Example 10: Re-enable automatic fan control
     printf("\n--- Example 6: Re-enable automatic fan control ---\n");
     ret = set_fan_auto_mode(dev_id, 1);
-    if (ret != RPP_SUCCESS) {
-        printf("Warning: Failed to re-enable auto mode\n");
-    }
+    FAIL_AND_EXIT_ON_ERROR("re-enabling automatic fan mode", ret);
     
+cleanup:
     // Clean up
     printf("\n--- Cleaning up ---\n");
     ret = close_odev();
@@ -249,7 +250,11 @@ int main(int argc, char **argv)
         printf("Cleanup successful\n");
     }
     
-    printf("\n=== Demo completed ===\n");
-    return EXIT_SUCCESS;
+    if (exit_code == EXIT_SUCCESS) {
+        printf("\n=== Tool completed ===\n");
+    } else {
+        printf("\n=== Tool aborted due to fan-control API failure ===\n");
+    }
+    return exit_code;
 }
 

@@ -1,11 +1,11 @@
 /**
  * @file rpp_info.c
- * @brief Demo application to query and display RPP device information
+ * @brief Tool application to query and display RPP device information
  * 
  * This program demonstrates how to retrieve device information including:
  * - Device temperature
  * - Power consumption
- * - GPU loading/utilization
+ * - RPP loading/utilization
  */
 
 #include "ae_smi_common.h"
@@ -22,9 +22,9 @@
  */
 int main(int argc, char **argv) {
     int count;              // Number of RPP devices detected
-    info_type type;         // Type of information returned (unused in this demo)
+    info_type type;         // Type of information returned (unused in this tool)
     info_name module;       // Information module to query (TEMP, POW, etc.)
-    uint32_t len;           // Length of returned data (unused in this demo)
+    uint32_t len;           // Length of returned data (unused in this tool)
     double double_value;    // Value returned from device info queries
     
     // Get the number of available RPP devices in the system
@@ -52,12 +52,12 @@ int main(int argc, char **argv) {
         get_pow_off(i); // Disable power measurement to save resources
         printf("POW: %-.3lfW\n", double_value);
         
-        // Query GPU loading/utilization
-        // get_gpu_loading_info() measures GPU utilization over a time period
+        // Query RPP loading/utilization
+        // get_gpu_loading_info() measures RPP utilization over a time period
         // Parameter 1 = measurement duration in units (approximately 200ms per unit)
         // Returns utilization as a fraction (0.0 to 1.0), multiply by 100 for percentage
         get_gpu_loading_info(i, &type, &double_value, &len, 1);  // 1 unit ≈ 200ms
-        printf("GPU: %.2f%%\n", 100 * double_value);
+        printf("RPP: %.2f%%\n", 100 * double_value);
         
         printf("\n");  // Blank line between devices for readability
     }
