@@ -1,6 +1,6 @@
 # AE-SMI Tool
 
-![AE Logo](images/logo_color_horizontal.png)
+![AE Logo](doc/logo/logo_color_horizontal.png)
 
 `ae-smi-tool` is a small AE-SMI utility package for RPP accelerator cards. It provides one tool to monitor card status and one tool to exercise chip-level thermal control on hardware that supports fan management.
 
