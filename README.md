@@ -1,39 +1,128 @@
-# AE-SMI Tool (RPP Status Monitor)
+# AE-SMI Tool
 
 ![AE Logo](images/logo_color_horizontal.png)
 
-`ae-smi-tool` is a lightweight C/C++ utility toolkit for AE-SMI that helps users monitor RPP runtime status and validate device-management capabilities on supported hardware.
+`ae-smi-tool` is a small AE-SMI utility package for RPP accelerator cards. It provides one tool to monitor card status and one tool to exercise chip-level thermal control on hardware that supports fan management.
 
-It currently includes:
-- `rpp-info`: monitor RPP runtime status (temperature, power, RPP loading)
-- `ae-smi-fan-control`: test fan control (auto/manual mode and speed levels)
+The current toolkit includes:
+- `rpp-info`: read card telemetry such as temperature, power, and RPP loading
+- `ae-smi-fan-control`: switch fan policy between auto/manual and validate manual speed levels
 
-## Description
+## What This Module Does
 
-This project is intended for bring-up, validation, and diagnostics of RPP accelerator cards. It provides:
-- A status monitor tool for telemetry collection (temperature, power, RPP loading)
-- A fan-control tool for thermal policy verification on hardware that supports fan management
+This project is aimed at bring-up, validation, and field diagnostics for RPP cards. The host program runs on the CPU, talks to the AE-SMI driver/runtime, and either:
+- collects telemetry from detected devices
+- sends thermal control commands to a selected device
 
-## Hardware Support Notice
+## Hardware And Runtime Notes
 
+- **RPP** in this repository refers to the accelerator card managed by the AE-SMI runtime.
+- `rpp-info` uses the telemetry path exposed by APIs such as `get_rdev_count`, `init_odev`, `get_dev_info`, `get_pow_on`, `get_pow_off`, and `get_gpu_loading_info`.
+- `ae-smi-fan-control` uses `rpp_dev_ctrl` with `SUBCMD_SET_THERMAL_CTRL` plus `get_dev_info(INFO_FAN_SPEED)` to validate thermal control.
 - **Fan control is supported only on PCIe cards.**
 - **M.2 cards do not support fan control.**
-- `rpp-info` monitoring can still be used on both PCIe and M.2 cards when the device is detected by the driver.
+- `rpp-info` can still be used on both PCIe and M.2 cards when the device is detected by the driver.
 
-## Features
+## Workflow
 
-- Monitor per-device RPP status:
-  - Temperature (`INFO_TEMP`)
-  - Power (`INFO_POW`)
-  - RPP loading/utilization
-- Enumerate and query multiple devices
-- Fan control validation:
-  - Enable/disable auto fan mode
-  - Set manual fan speed level (`0-6`)
-  - Read current fan speed percentage
-- Self-contained build dependencies from `lib/`
+### `rpp-info`
+
+1. Call `get_rdev_count` to discover how many devices the driver exposes.
+2. Call `init_odev` to open the AE-SMI device context.
+3. For each device:
+   - read `INFO_TEMP`
+   - enable power readout with `get_pow_on`, read `INFO_POW`, then call `get_pow_off`
+   - call `get_gpu_loading_info` to sample RPP loading
+4. Call `close_odev` to release all device handles.
+
+### `ae-smi-fan-control`
+
+1. Call `get_rdev_count` and `init_odev`.
+2. Select device `0` in the demo flow.
+3. Read the current fan speed with `get_dev_info(INFO_FAN_SPEED)`.
+4. Enable auto mode.
+5. Disable auto mode and sweep manual levels `0` through `6`.
+6. After each write, refresh the register view with `init_reg` and read back the current fan speed.
+7. Re-enable auto mode and close the device context with `close_odev`.
+
+## Workflow Diagram
+
+```text
++------------------+
+| rpp-info         |
++------------------+
+         |
+         v
++------------------+
+| get_rdev_count   |
++------------------+
+         |
+         v
++------------------+
+| init_odev        |
++------------------+
+         |
+         v
++--------------------------------------+
+| for each detected device             |
+| - get_dev_info(INFO_TEMP)            |
+| - get_pow_on                         |
+| - get_dev_info(INFO_POW)             |
+| - get_pow_off                        |
+| - get_gpu_loading_info               |
+| - print TEMP / POW / RPP             |
++--------------------------------------+
+         |
+         v
++------------------+
+| close_odev       |
++------------------+
+
++----------------------+
+| ae-smi-fan-control   |
++----------------------+
+           |
+           v
++------------------+
+| get_rdev_count   |
++------------------+
+           |
+           v
++------------------+
+| init_odev        |
++------------------+
+           |
+           v
++------------------------------+
+| select device 0              |
+| init_reg                     |
+| get_dev_info(INFO_FAN_SPEED) |
++------------------------------+
+           |
+           v
++------------------------------+
+| set_fan_auto_mode(1)         |
+| set_fan_speed_manual(0..6)   |
+| init_reg + read back speed   |
++------------------------------+
+           |
+           v
++------------------+
+| set_fan_auto(1)  |
+| close_odev       |
++------------------+
+```
+
+## Summary
+
+| Tool | Main APIs | Purpose |
+| --- | --- | --- |
+| `rpp-info` | `get_rdev_count`, `init_odev`, `get_dev_info`, `get_pow_on`, `get_pow_off`, `get_gpu_loading_info`, `close_odev` | Monitor RPP card telemetry |
+| `ae-smi-fan-control` | `get_rdev_count`, `init_odev`, `init_reg`, `get_dev_info`, `rpp_dev_ctrl`, `close_odev` | Validate chip fan-control behavior on PCIe cards |
 
 ## Project Layout
+
+Source-controlled files:
 
 ```text
 ae-smi-tool/
@@ -59,9 +148,11 @@ ae-smi-tool/
     └── libuv_a.a
 ```
 
+`build/` is not part of the repository layout. It is a generated build directory created locally when you run CMake.
+
 ## Build
 
-From project root:
+From the project root, create an out-of-tree `build/` directory first:
 
 ```bash
 mkdir -p build
@@ -76,7 +167,7 @@ Generated binaries:
 
 ## Usage
 
-### 1) Monitor RPP Status (`rpp-info`)
+### Monitor RPP Status
 
 ```bash
 ./build/tools/rpp-info/rpp-info
@@ -91,24 +182,18 @@ POW: 12.345W
 RPP: 35.67%
 ```
 
-For each detected device, the tool:
-1. Initializes device context
-2. Reads temperature
-3. Enables power measurement, reads power, then disables power measurement
-4. Reads RPP loading
-5. Cleans up device resources
-
-### 2) Fan Control Tool (`ae-smi-fan-control`)
+### Validate Fan Control
 
 ```bash
 ./build/tools/fan-control/ae-smi-fan-control
 ```
 
-This tool walks through:
-- Query current fan speed
-- Enable automatic fan mode
-- Switch to manual mode and set fan levels `0..6`
-- Restore automatic mode
+This demo walks through:
+- query current fan speed
+- enable automatic fan mode
+- switch to manual mode and set fan levels `0..6`
+- read back fan speed after each change
+- restore automatic mode before exit
 
 > **Important:** Run `ae-smi-fan-control` only on PCIe cards. M.2 cards do not provide fan-control capability.
 
@@ -149,6 +234,6 @@ System libraries linked by CMake:
 
 ## Notes
 
-- Fan level mapping (`0-6` to percentage) may differ by hardware/firmware.
-- Fan control API behavior applies to PCIe cards only; M.2 cards do not support fan control.
-- For multi-device scenarios, update source logic if you want custom filtering behavior.
+- Fan level mapping for manual control is firmware-dependent; this demo documents the common `0-6` validation flow only.
+- `ae-smi-fan-control` currently targets device `0`; extend the source if you need a device-selection CLI.
+- The telemetry and fan-control tools are both demos, so they currently print results directly instead of emitting machine-readable output.
